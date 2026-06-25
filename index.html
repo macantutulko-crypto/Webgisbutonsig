@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGIS Kabupaten Buton</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- LEAFLET -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <!-- SEARCH -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-search@3.0.9/dist/leaflet-search.min.css"/>
+    <!-- DRAW -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+    <!-- MEASURE -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-measure@3.1.0/dist/leaflet-measure.css"/>
+    <!-- MINIMAP -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.css">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- ========================
+         NAVBAR TOP
+    ======================== -->
+    <nav class="navbar">
+        <div class="navbar-left">
+            <button class="sidebar-toggle" id="sidebarToggle" title="Toggle Sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="nav-brand">
+                <div class="brand-icon">🗺️</div>
+                <div class="brand-info">
+                    <span class="brand-title">WebGIS Kabupaten Buton</span>
+                    <span class="brand-sub">Sistem Informasi Geografis</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="navbar-center">
+            <div class="nav-menu">
+                <a href="#" class="nav-item active" data-page="map" onclick="showPage('map', this)">
+                    <i class="fas fa-map"></i> Peta
+                </a>
+                <a href="#" class="nav-item" data-page="info" onclick="showPage('info', this)">
+                    <i class="fas fa-info-circle"></i> Tentang Buton
+                </a>
+                <a href="#" class="nav-item" data-page="data" onclick="showPage('data', this)">
+                    <i class="fas fa-table"></i> Data Kecamatan
+                </a>
+                <a href="#" class="nav-item" data-page="galeri" onclick="showPage('galeri', this)">
+                    <i class="fas fa-images"></i> Galeri
+                </a>
+            </div>
+        </div>
+
+        <div class="navbar-right">
+            <div class="nav-user">
+                <div class="user-avatar"><i class="fas fa-user"></i></div>
+                <div class="user-info">
+                    <span class="user-name" id="navUsername">Pengguna</span>
+                    <span class="user-role" id="navRole">viewer</span>
+                </div>
+                <div class="user-dropdown">
+                    <button class="dropdown-btn" onclick="toggleDropdown()">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Keluar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========================
+         HALAMAN PETA
+    ======================== -->
+    <div class="page active" id="page-map">
+        <!-- SIDEBAR -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-layer-group"></i> Panel Kontrol</h3>
+            </div>
+
+            <!-- LAYER CONTROL -->
+            <div class="sidebar-section">
+                <div class="section-title">
+                    <i class="fas fa-map-signs"></i> Basemap
+                </div>
+                <div class="basemap-options">
+                    <label class="basemap-option active" id="bm-osm">
+                        <input type="radio" name="basemap" value="osm" checked onchange="changeBasemap('osm')">
+                        <span>🗺️ OpenStreetMap</span>
+                    </label>
+                    <label class="basemap-option" id="bm-satellite">
+                        <input type="radio" name="basemap" value="satellite" onchange="changeBasemap('satellite')">
+                        <span>🛰️ Satellite</span>
+                    </label>
+                    <label class="basemap-option" id="bm-terrain">
+                        <input type="radio" name="basemap" value="terrain" onchange="changeBasemap('terrain')">
+                        <span>🏔️ Terrain</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- OVERLAY LAYERS -->
+            <div class="sidebar-section">
+                <div class="section-title">
+                    <i class="fas fa-layers"></i> Layer Data
+                </div>
+                <label class="layer-toggle">
+                    <input type="checkbox" id="chk-kecamatan" checked onchange="toggleLayer('kecamatan', this.checked)">
+                    <span class="toggle-switch"></span>
+                    <span>Batas Kecamatan</span>
+                </label>
+                <label class="layer-toggle">
+                    <input type="checkbox" id="chk-jalan" checked onchange="toggleLayer('jalan', this.checked)">
+                    <span class="toggle-switch"></span>
+                    <span>Jaringan Jalan</span>
+                </label>
+                <label class="layer-toggle">
+                    <input type="checkbox" id="chk-pemerintahan" checked onchange="toggleLayer('pemerintahan', this.checked)">
+                    <span class="toggle-switch"></span>
+                    <span>Fasilitas Pemerintahan</span>
+                </label>
+            </div>
+
+            <!-- LAYER GEOJSON KUSTOM (UPLOAD) -->
+            <div class="sidebar-section">
+                <div class="section-title">
+                    <i class="fas fa-upload"></i> Layer Kustom (Upload)
+                </div>
+
+                <button class="action-btn" id="btnOpenUpload" onclick="openUploadModal()" style="display:none;">
+                    <i class="fas fa-cloud-upload-alt"></i> Upload Data GeoJSON
+                </button>
+
+                <div id="customLayerList" class="custom-layer-list">
+                    <div class="custom-layer-empty" id="customLayerEmpty">
+                        <i class="fas fa-spinner fa-spin"></i> Memuat layer...
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEGENDA -->
+            <div class="sidebar-section">
+                <div class="section-title">
+                    <i class="fas fa-list"></i> Legenda
+                </div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" style="stroke:#160dce;stroke-width:3"/></svg>
+                        <span>Jalan Kolektor</span>
+                    </div>
+                    <div class="legend-item">
+                        <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" style="stroke:#08f00f;stroke-width:2"/></svg>
+                        <span>Jalan Lokal</span>
+                    </div>
+                    <div class="legend-item">
+                        <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" style="stroke:#df0dbc;stroke-width:2"/></svg>
+                        <span>Jalan Lain</span>
+                    </div>
+                    <div class="legend-item">
+                        <svg width="30" height="12"><line x1="0" y1="6" x2="30" y2="6" style="stroke:#0cc2ff;stroke-width:1.5"/></svg>
+                        <span>Jalan Setapak</span>
+                    </div>
+                    <div class="legend-item">
+                        <img src="libs/pemerintahan/icon.jpg" width="14" height="20">
+                        <span>Kantor Pemerintahan</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KOORDINAT -->
+            <div class="sidebar-section">
+                <div class="section-title">
+                    <i class="fas fa-crosshairs"></i> Koordinat Mouse
+                </div>
+                <div class="coord-box">
+                    <div class="coord-row"><span>Lat:</span><span id="coordLat">-</span></div>
+                    <div class="coord-row"><span>Lon:</span><span id="coordLon">-</span></div>
+                    <div class="coord-row"><span>Zoom:</span><span id="coordZoom">-</span></div>
+                </div>
+            </div>
+
+            <!-- TOMBOL AKSI -->
+            <div class="sidebar-section">
+                <div class="section-title">
+                    <i class="fas fa-tools"></i> Aksi Cepat
+                </div>
+                <button class="action-btn" onclick="resetView()">
+                    <i class="fas fa-home"></i> Reset View
+                </button>
+                <button class="action-btn" onclick="printMap()">
+                    <i class="fas fa-print"></i> Cetak Peta
+                </button>
+            </div>
+        </div>
+
+        <!-- MAP -->
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- ========================
+         HALAMAN TENTANG BUTON
+    ======================== -->
+    <div class="page" id="page-info">
+        <div class="content-page">
+            <div class="content-hero">
+                <div class="hero-overlay">
+                    <h1>Kabupaten Buton</h1>
+                    <p>Negeri Seribu Benteng di Sulawesi Tenggara</p>
+                </div>
+            </div>
+
+            <div class="content-body">
+                <div class="info-grid">
+                    <div class="info-card highlight">
+                        <div class="info-icon">🏝️</div>
+                        <h3>Tentang Buton</h3>
+                        <p>Kabupaten Buton merupakan salah satu kabupaten di Provinsi Sulawesi Tenggara yang terletak di Pulau Buton. Kabupaten ini dikenal sebagai "Negeri Seribu Benteng" dengan warisan sejarah Kesultanan Buton yang kaya.</p>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-icon">📍</div>
+                        <h3>Lokasi & Batas Wilayah</h3>
+                        <ul class="info-list">
+                            <li><strong>Ibukota:</strong> Pasarwajo</li>
+                            <li><strong>Utara:</strong> Kabupaten Buton Utara</li>
+                            <li><strong>Selatan:</strong> Kabupaten Buton Selatan</li>
+                            <li><strong>Barat:</strong> Laut Banda</li>
+                            <li><strong>Timur:</strong> Selat Buton</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-icon">📊</div>
+                        <h3>Data Geografis</h3>
+                        <ul class="info-list">
+                            <li><strong>Luas Wilayah:</strong> ± 2.488 km²</li>
+                            <li><strong>Jumlah Kecamatan:</strong> 13 Kecamatan</li>
+                            <li><strong>Jumlah Desa/Kel:</strong> ± 119 Desa/Kelurahan</li>
+                            <li><strong>Koordinat:</strong> 5°0' – 5°40' LS</li>
+                            <li><strong>Koordinat:</strong> 122°20' – 123°30' BT</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-icon">🏛️</div>
+                        <h3>Sejarah Singkat</h3>
+                        <p>Buton memiliki sejarah panjang sebagai pusat Kesultanan Buton yang berdiri pada abad ke-14. Benteng Keraton Buton di Bau-Bau (dulu bagian dari Kabupaten Buton) merupakan benteng terluas di dunia berdasarkan catatan Museum Rekor Indonesia (MURI).</p>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-icon">🌿</div>
+                        <h3>Potensi Alam</h3>
+                        <ul class="info-list">
+                            <li>Pertambangan Aspal Alam (Terbesar di Dunia)</li>
+                            <li>Perikanan & Kelautan</li>
+                            <li>Perkebunan Jambu Mete</li>
+                            <li>Pertanian Padi & Palawija</li>
+                            <li>Pariwisata Bahari</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-icon">🎭</div>
+                        <h3>Budaya & Tradisi</h3>
+                        <ul class="info-list">
+                            <li>Tari Linda (Tari Tradisional Buton)</li>
+                            <li>Upacara Adat Posuo</li>
+                            <li>Tradisi Haroa</li>
+                            <li>Kuliner Khas: Kambuse, Kasuami</li>
+                            <li>Tenun Tradisional Buton</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- STATISTIK CARDS -->
+                <div class="stats-section">
+                    <h2>Statistik Kabupaten Buton</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">13</div>
+                            <div class="stat-label">Kecamatan</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">~175K</div>
+                            <div class="stat-label">Penduduk</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">2.488</div>
+                            <div class="stat-label">km² Luas Wilayah</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">119</div>
+                            <div class="stat-label">Desa/Kelurahan</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================
+         HALAMAN DATA KECAMATAN
+    ======================== -->
+    <div class="page" id="page-data">
+        <div class="content-page">
+            <div class="data-header">
+                <h2><i class="fas fa-table"></i> Data Kecamatan Kabupaten Buton</h2>
+                <div class="data-controls">
+                    <input type="text" id="searchTable" placeholder="🔍 Cari kecamatan..." oninput="filterTable()" class="search-input">
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="data-table" id="kecamatanTable">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Kecamatan</th>
+                            <th>Ibukota</th>
+                            <th>Luas (km²)</th>
+                            <th>Jumlah Desa</th>
+                            <th>Jumlah Penduduk</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data dari PHP/static -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================
+         HALAMAN GALERI
+    ======================== -->
+    <div class="page" id="page-galeri">
+        <div class="content-page">
+            <div class="data-header">
+                <h2><i class="fas fa-images"></i> Galeri Kabupaten Buton</h2>
+            </div>
+            <div class="galeri-grid">
+                <div class="galeri-card">
+                    <div class="galeri-placeholder">🏰</div>
+                    <div class="galeri-info">
+                        <h4>Benteng Keraton Buton</h4>
+                        <p>Benteng terluas di dunia versi MURI</p>
+                    </div>
+                </div>
+                <div class="galeri-card">
+                    <div class="galeri-placeholder">🏖️</div>
+                    <div class="galeri-info">
+                        <h4>Pantai Nirwana</h4>
+                        <p>Keindahan pantai Kabupaten Buton</p>
+                    </div>
+                </div>
+                <div class="galeri-card">
+                    <div class="galeri-placeholder">⛏️</div>
+                    <div class="galeri-info">
+                        <h4>Aspal Buton</h4>
+                        <p>Tambang aspal alam terbesar di dunia</p>
+                    </div>
+                </div>
+                <div class="galeri-card">
+                    <div class="galeri-placeholder">🎭</div>
+                    <div class="galeri-info">
+                        <h4>Tari Linda</h4>
+                        <p>Tari tradisional Kota Buton</p>
+                    </div>
+                </div>
+                <div class="galeri-card">
+                    <div class="galeri-placeholder">🌊</div>
+                    <div class="galeri-info">
+                        <h4>Selat Buton</h4>
+                        <p>Pemandangan selat yang memukau</p>
+                    </div>
+                </div>
+                <div class="galeri-card">
+                    <div class="galeri-placeholder">🏛️</div>
+                    <div class="galeri-info">
+                        <h4>Kantor Bupati Buton</h4>
+                        <p>Pusat pemerintahan Kabupaten Buton</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================
+         MODAL UPLOAD GEOJSON
+    ======================== -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-box modal-box-wide">
+            <div class="modal-header">
+                <h3><i class="fas fa-cloud-upload-alt"></i> Upload Data GeoJSON</h3>
+                <button class="modal-close" onclick="closeUploadModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-alert" id="uploadAlert"></div>
+
+                <div class="form-group">
+                    <label>Nama Layer <span class="required">*</span></label>
+                    <input type="text" id="uploadNamaLayer" placeholder="Contoh: Batas Desa, Titik Wisata, Zona Rawan Banjir" class="upload-input">
+                </div>
+
+                <div class="form-group">
+                    <label>Deskripsi (opsional)</label>
+                    <input type="text" id="uploadDeskripsi" placeholder="Keterangan singkat tentang layer ini" class="upload-input">
+                </div>
+
+                <div class="form-group">
+                    <label>Warna Tampilan di Peta</label>
+                    <input type="color" id="uploadWarna" value="#e11d48" class="upload-color">
+                </div>
+
+                <div class="form-group">
+                    <label>File GeoJSON <span class="required">*</span></label>
+                    <div class="upload-dropzone" id="uploadDropzone">
+                        <input type="file" id="uploadFileInput" accept=".geojson,.json" hidden>
+                        <i class="fas fa-file-upload"></i>
+                        <p><strong>Klik untuk pilih file</strong> atau seret file ke sini</p>
+                        <span class="upload-filename" id="uploadFileName">Belum ada file dipilih (.geojson / .json)</span>
+                    </div>
+                </div>
+
+                <p class="upload-divider">— atau tempel langsung isi GeoJSON —</p>
+
+                <div class="form-group">
+                    <textarea id="uploadTextArea" rows="4" placeholder='{"type":"FeatureCollection","features":[...]}' class="upload-textarea"></textarea>
+                </div>
+
+                <button class="btn-upload-submit" id="btnSubmitUpload" onclick="submitGeojsonUpload()">
+                    <i class="fas fa-upload"></i> <span>Upload Layer</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================
+         SCRIPTS LEAFLET
+    ======================== -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-search@3.0.9/dist/leaflet-search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-measure@3.1.0/dist/leaflet-measure.min.js"></script>
+    <script src="https://unpkg.com/leaflet.browser.print/dist/leaflet.browser.print.min.js"></script>
+    <script src="https://unpkg.com/rbush@2.0.2/rbush.min.js"></script>
+    <script src="https://unpkg.com/labelgun@6.1.0/lib/labelgun.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.js"></script>
+
+    <!-- DATA GeoJSON -->
+    <script src="js/labels.js"></script>
+    <script src="js/administrasikecamatan.js"></script>
+    <script src="js/jalan.js"></script>
+    <script src="js/pemerintahan.js"></script>
+
+    <!-- MAIN APP -->
+    <script src="js/main.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/geojson-upload.js"></script>
+</body>
+</html>
